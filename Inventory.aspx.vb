@@ -118,55 +118,65 @@ Partial Class Inventory
             Case "Edit", "Delete" : pnlFilePopup.Visible = False
         End Select
 
-        If e.CommandName = "EditRow" Then
-            Try
-                ' Get the row ID from the CommandArgument
-                Dim rowID As Integer = Convert.ToInt32(e.CommandArgument)
-
-                ' Fetch the row data from the database
-                Dim dt As DataTable = GetRowData(rowID)
-
-                If dt.Rows.Count > 0 Then
-                    ' Populate the edit popup fields with data
-                    txtEditIncomingType.Text = dt.Rows(0)("Incoming_Type").ToString()
-                    txtEditPostalCode.Text = dt.Rows(0)("Postal_Code").ToString()
-                    txtEditEmpNumber.Text = dt.Rows(0)("Emp_Number").ToString()
-                    txtEditEmpName.Text = dt.Rows(0)("Emp_Name").ToString()
-                    txtEditSubject.Text = dt.Rows(0)("Subject").ToString()
-                    txtEditSubjectContent.Text = dt.Rows(0)("Subject_Content").ToString()
-                    txtEditInTashira.Text = dt.Rows(0)("In_Tashira").ToString()
-                    txtEditOutTashira.Text = dt.Rows(0)("Out_Tashira").ToString()
-                    txtEditAditionalTashira.Text = dt.Rows(0)("Aditional_Tashira").ToString()
-                    txtEditFollowup3.Text = dt.Rows(0)("Followup3").ToString()
-                    txtEditActionTaken.Text = dt.Rows(0)("Action_Taken").ToString()
-                    txtEditAditionalActions.Text = dt.Rows(0)("Aditional_Actions").ToString()
-                    txtEditRequiredTime.Text = dt.Rows(0)("Required_Time").ToString()
-                    txtEditSubjectStatus.Text = dt.Rows(0)("Subject_Status").ToString()
-                    txtEditNotes.Text = dt.Rows(0)("Notes").ToString()
-
-                    ' Set values for HTML input elements using JavaScript
-                    ClientScript.RegisterStartupScript(Me.GetType(), "SetAuthority",
-                        String.Format("document.getElementById('txtEditAuthority').value = '{0}';",
-                        dt.Rows(0)("Authority").ToString().Replace("'", "\\'")), True)
-
-                    ClientScript.RegisterStartupScript(Me.GetType(), "SetIncomingFrom",
-                        String.Format("document.getElementById('txtEditIncomingFrom').value = '{0}';",
-                        dt.Rows(0)("Incoming_From").ToString().Replace("'", "\\'")), True)
-
-                    ' Set the record ID in the hidden field
-                    HiddenFieldEditRecordID.Value = rowID.ToString()
-
-                    ' Show the popup
-                    pnlEditPopup.Style("display") = "block"
-                    pnlEditPopup.Style("z-index") = "1000"
-                Else
-                    ClientScript.RegisterStartupScript(Me.GetType(), "NoData", "alert('No data found for this record.');", True)
-                End If
-            Catch ex As Exception
-                ClientScript.RegisterStartupScript(Me.GetType(), "Error", "alert('Error loading data: " & ex.Message & "');", True)
-            End Try
+        If e.CommandName = "Edit" Then
+            LinkButton6_Click(sender, e)
         End If
         GridView1.DataBind()
+    End Sub
+
+    Protected Sub LinkButton6_Click(sender As Object, e As EventArgs)
+        Try
+            ' Get the LinkButton that was clicked
+            Dim btn As LinkButton = DirectCast(sender, LinkButton)
+            
+            ' Get the row ID from the CommandArgument
+            Dim rowId As String = btn.CommandArgument
+            
+            ' Store the row ID in the hidden field
+            HiddenFieldEditRecordID.Value = rowId
+            
+            ' Get the data for this record
+            Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("Post_DBConnectionString").ConnectionString)
+                conn.Open()
+                
+                Dim cmd As New SqlCommand("SELECT * FROM Inventory WHERE ID = @ID", conn)
+                cmd.Parameters.AddWithValue("@ID", rowId)
+                
+                Using reader As SqlDataReader = cmd.ExecuteReader()
+                    If reader.Read() Then
+                        ' Set values for dropdown lists
+                        txtEditIncomingType.SelectedValue = reader("Incoming_Type").ToString()
+                        txtEditAuthority.Value = reader("Authority").ToString()
+                        txtEditSubject.SelectedValue = reader("Subject").ToString()
+                        txtEditIncomingFrom.Value = reader("Incoming_From").ToString()
+                        txtEditAditionalActions.SelectedValue = reader("Aditional_Actions").ToString()
+                        txtEditSubjectStatus.SelectedValue = reader("Subject_Status").ToString()
+                        txtEditRequiredTime.SelectedValue = reader("Required_Time").ToString()
+                        
+                        ' Set values for other fields
+                        txtEditPostalCode.Text = reader("Postal_Code").ToString()
+                        txtEditEmpNumber.Text = reader("Emp_Number").ToString()
+                        txtEditEmpName.Text = reader("Emp_Name").ToString()
+                        txtEditSubjectContent.Text = reader("Subject_Content").ToString()
+                        txtEditInTashira.Text = reader("In_Tashira").ToString()
+                        txtEditOutTashira.Text = reader("Out_Tashira").ToString()
+                        txtEditActionTaken.Text = reader("Action_Taken").ToString()
+                        txtEditAditionalTashira.Text = reader("Aditional_Tashira").ToString()
+                        txtEditNotes.Text = reader("Notes").ToString()
+                        txtEditFollowup3.Text = reader("Followup3").ToString()
+                    End If
+                End Using
+            End Using
+            
+            ' Register a script to show the popup
+            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowEditPopup", 
+                String.Format("openEditPopup('{0}');", rowId), True)
+            
+        Catch ex As Exception
+            ' Log the error and show a user-friendly message
+            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ErrorAlert", 
+                "alert('حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.');", True)
+        End Try
     End Sub
 
     Private Function GetRowData(rowID As Integer) As DataTable
@@ -192,10 +202,6 @@ Partial Class Inventory
             ' Get the record ID from the hidden field
             Dim rowID As Integer = Convert.ToInt32(HiddenFieldEditRecordID.Value)
 
-            ' Get the values from the HTML input elements using JavaScript
-            Dim authorityValue As String = Request.Form("txtEditAuthority")
-            Dim incomingFromValue As String = Request.Form("txtEditIncomingFrom")
-
             ' Update the row data in the database
             Dim query As String = "UPDATE Inventory SET " & _
                 "Incoming_Type = @Incoming_Type, " & _
@@ -219,23 +225,26 @@ Partial Class Inventory
 
             Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("Post_DBConnectionString").ConnectionString)
                 Using cmd As New SqlCommand(query, conn)
-                    cmd.Parameters.AddWithValue("@Incoming_Type", txtEditIncomingType.Text)
+                    ' Get values from dropdown lists
+                    cmd.Parameters.AddWithValue("@Incoming_Type", txtEditIncomingType.SelectedValue)
+                    cmd.Parameters.AddWithValue("@Authority", txtEditAuthority.Value)
+                    cmd.Parameters.AddWithValue("@Subject", txtEditSubject.SelectedValue)
+                    cmd.Parameters.AddWithValue("@Incoming_From", txtEditIncomingFrom.Value)
+                    cmd.Parameters.AddWithValue("@Aditional_Actions", txtEditAditionalActions.SelectedValue)
+                    cmd.Parameters.AddWithValue("@Required_Time", txtEditRequiredTime.SelectedValue)
+                    cmd.Parameters.AddWithValue("@Subject_Status", txtEditSubjectStatus.SelectedValue)
+                    
+                    ' Get values from other fields
                     cmd.Parameters.AddWithValue("@Postal_Code", txtEditPostalCode.Text)
-                    cmd.Parameters.AddWithValue("@Authority", authorityValue)
                     cmd.Parameters.AddWithValue("@Emp_Number", txtEditEmpNumber.Text)
                     cmd.Parameters.AddWithValue("@Emp_Name", txtEditEmpName.Text)
-                    cmd.Parameters.AddWithValue("@Subject", txtEditSubject.Text)
                     cmd.Parameters.AddWithValue("@Subject_Content", txtEditSubjectContent.Text)
                     cmd.Parameters.AddWithValue("@In_Tashira", txtEditInTashira.Text)
                     cmd.Parameters.AddWithValue("@Out_Tashira", txtEditOutTashira.Text)
-                    cmd.Parameters.AddWithValue("@Aditional_Tashira", txtEditAditionalTashira.Text)
-                    cmd.Parameters.AddWithValue("@Followup3", txtEditFollowup3.Text)
-                    cmd.Parameters.AddWithValue("@Incoming_From", incomingFromValue)
                     cmd.Parameters.AddWithValue("@Action_Taken", txtEditActionTaken.Text)
-                    cmd.Parameters.AddWithValue("@Aditional_Actions", txtEditAditionalActions.Text)
-                    cmd.Parameters.AddWithValue("@Required_Time", txtEditRequiredTime.Text)
-                    cmd.Parameters.AddWithValue("@Subject_Status", txtEditSubjectStatus.Text)
+                    cmd.Parameters.AddWithValue("@Aditional_Tashira", txtEditAditionalTashira.Text)
                     cmd.Parameters.AddWithValue("@Notes", txtEditNotes.Text)
+                    cmd.Parameters.AddWithValue("@Followup3", txtEditFollowup3.Text)
                     cmd.Parameters.AddWithValue("@ID", rowID)
 
                     conn.Open()
@@ -257,8 +266,11 @@ Partial Class Inventory
     End Sub
 
     Protected Sub btnCancelEdit_Click(sender As Object, e As EventArgs)
-        ' Hide the popup
-        pnlEditPopup.Style("display") = "none"
+        ' Hide the edit popup
+        pnlEditPopup.Visible = False
+        
+        ' Clear the hidden field
+        HiddenFieldEditRecordID.Value = ""
     End Sub
 
     Private Sub HandleDownloadCommand(e As GridViewCommandEventArgs)
