@@ -39,6 +39,8 @@ Partial Class LOGIN
                 Me.TextBox1.Focus()
                 Exit Sub
             End If
+
+            ' Set basic session information
             Session("UsrID") = DT.Rows(0).Item("UsrID").ToString
             Session("UsrName") = DT.Rows(0).Item("UsrName").ToString
             Session("PWD") = DT.Rows(0).Item("PWD").ToString
@@ -46,21 +48,42 @@ Partial Class LOGIN
             Session("Work_Area") = DT.Rows(0).Item("Work_Area").ToString
             Session("ID") = DT.Rows(0).Item("ID").ToString
 
+            ' Handle branch-specific access
+            If Session("CurrentBranch") IsNot Nothing Then
+                Dim userBranches As List(Of String) = SumClass1.GetUserBranches()
+                If Not userBranches.Contains(Session("CurrentBranch").ToString()) Then
+                    LblErr.Text = "ليس لديك صلاحية الوصول إلى هذا الفرع"
+                    Session.Clear()
+                    Me.TextBox1.Text = ""
+                    Me.TextBox2.Text = ""
+                    Me.TextBox1.Focus()
+                    Exit Sub
+                End If
+            End If
 
-            'Response.Redirect("MAIN.aspx")
-
+            ' Handle redirect after successful login
             If Session("CurrentPage") IsNot Nothing Then
                 Dim lastPage As String = Session("CurrentPage").ToString()
-                Session("CurrentPage") = Nothing ' Clear after use
+                ' Clear the stored page after use
+                Session("CurrentPage") = Nothing
+                
+                ' If there's a referrer URL, use it as fallback
+                If Session("ReferrerUrl") IsNot Nothing Then
+                    Session("ReferrerUrl") = Nothing
+                End If
+                
                 Response.Redirect(lastPage)
-                HttpContext.Current.Response.Redirect(Session("CurrentPage").ToString())
-
+            ElseIf Session("ReferrerUrl") IsNot Nothing Then
+                ' Use referrer URL as fallback if no current page
+                Dim referrerUrl As String = Session("ReferrerUrl").ToString()
+                Session("ReferrerUrl") = Nothing
+                Response.Redirect(referrerUrl)
             Else
-                Response.Redirect("MAIN.aspx") ' Redirect to home page if no last page found
+                ' Default to main page if no stored page or referrer
+                Response.Redirect("MAIN.aspx")
             End If
         Catch
             ClientScript.RegisterClientScriptBlock(Me.GetType, "ExceptionMessage", "<script type='text/JavaScript'>alert('   لم يتم الاتصال بقاعده البيانات !');</script>")
         End Try
-
     End Sub
 End Class

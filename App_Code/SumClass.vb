@@ -152,13 +152,69 @@ Public Class SumClass
         Return ipAddress
     End Function
 
-    ' Logout and redirect to login page
+    ' Enhanced session management with branch support
     Public Sub Session_logout()
         If Session("UsrName") Is Nothing Then
-            Session("CurrentPage") = HttpContext.Current.Request.Url.AbsoluteUri
+            ' Store the current page URL for redirect after login
+            Dim currentUrl As String = HttpContext.Current.Request.Url.AbsoluteUri
+            ' Remove any existing query parameters to avoid duplicate parameters
+            If currentUrl.Contains("?") Then
+                currentUrl = currentUrl.Substring(0, currentUrl.IndexOf("?"))
+            End If
+            Session("CurrentPage") = currentUrl
+            
+            ' Store branch information if available
+            If Not String.IsNullOrEmpty(HttpContext.Current.Request.QueryString("branch")) Then
+                Session("CurrentBranch") = HttpContext.Current.Request.QueryString("branch")
+            End If
+            
+            ' Store additional context if needed
+            If HttpContext.Current.Request.UrlReferrer IsNot Nothing Then
+                Session("ReferrerUrl") = HttpContext.Current.Request.UrlReferrer.AbsoluteUri
+            End If
+            
             HttpContext.Current.Response.Redirect("~/login.aspx")
         End If
     End Sub
+
+    ' Check if user has access to specific branch
+    Public Function HasBranchAccess(branchId As String) As Boolean
+        If Session("PRMTION") = 1 Then
+            Return True ' Admin has access to all branches
+        End If
+        
+        ' Check if user's work area matches the branch
+        Return Session("Work_Area") IsNot Nothing AndAlso 
+               Session("Work_Area").ToString().Equals(branchId, StringComparison.OrdinalIgnoreCase)
+    End Function
+
+    ' Get user's accessible branches
+    Public Function GetUserBranches() As List(Of String)
+        Dim branches As New List(Of String)
+        
+        If Session("PRMTION") = 1 Then
+            ' Admin gets all branches
+            Using con As New SqlConnection(ConfigurationManager.ConnectionStrings("Post_DBConnectionString").ConnectionString)
+                Dim query As String = "SELECT DISTINCT Work_Area FROM USERS WHERE Work_Area IS NOT NULL AND Work_Area <> ''"
+                Using cmd As New SqlCommand(query, con)
+                    con.Open()
+                    Using reader As SqlDataReader = cmd.ExecuteReader()
+                        While reader.Read()
+                            branches.Add(reader("Work_Area").ToString())
+                        End While
+                    End Using
+                End Using
+            End Using
+        Else
+            ' Regular users get their assigned branch
+            If Session("Work_Area") IsNot Nothing Then
+                branches.Add(Session("Work_Area").ToString())
+            End If
+        End If
+        
+        Return branches
+    End Function
+
     ' Insert data into OFFICES table
     Public Sub Insert_OFFICES(id As Integer, zoneName As String, ofceName As String, ofceID As Integer, pCode As Integer, zoneID As Integer, managerName As String)
         Try
@@ -178,6 +234,7 @@ Public Class SumClass
             Throw New Exception("Error inserting data into OFFICES table: " & ex.Message)
         End Try
     End Sub
+
     ' Get maximum ID from OFFICES table
     Public Function MaxIDOffice() As Integer
         Dim query As String = "SELECT MAX(ID) FROM OFFICES"

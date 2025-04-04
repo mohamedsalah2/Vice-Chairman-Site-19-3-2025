@@ -128,20 +128,20 @@ Partial Class Inventory
         Try
             ' Get the LinkButton that was clicked
             Dim btn As LinkButton = DirectCast(sender, LinkButton)
-            
+
             ' Get the row ID from the CommandArgument
             Dim rowId As String = btn.CommandArgument
-            
+
             ' Store the row ID in the hidden field
             HiddenFieldEditRecordID.Value = rowId
-            
+
             ' Get the data for this record
             Using conn As New SqlConnection(ConfigurationManager.ConnectionStrings("Post_DBConnectionString").ConnectionString)
                 conn.Open()
-                
+
                 Dim cmd As New SqlCommand("SELECT * FROM Inventory WHERE ID = @ID", conn)
                 cmd.Parameters.AddWithValue("@ID", rowId)
-                
+
                 Using reader As SqlDataReader = cmd.ExecuteReader()
                     If reader.Read() Then
                         ' Set values for dropdown lists
@@ -152,7 +152,7 @@ Partial Class Inventory
                         txtEditAditionalActions.SelectedValue = reader("Aditional_Actions").ToString()
                         txtEditSubjectStatus.SelectedValue = reader("Subject_Status").ToString()
                         txtEditRequiredTime.SelectedValue = reader("Required_Time").ToString()
-                        
+
                         ' Set values for other fields
                         txtEditPostalCode.Text = reader("Postal_Code").ToString()
                         txtEditEmpNumber.Text = reader("Emp_Number").ToString()
@@ -167,14 +167,14 @@ Partial Class Inventory
                     End If
                 End Using
             End Using
-            
+
             ' Register a script to show the popup
-            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowEditPopup", 
+            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ShowEditPopup",
                 String.Format("openEditPopup('{0}');", rowId), True)
-            
+
         Catch ex As Exception
             ' Log the error and show a user-friendly message
-            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ErrorAlert", 
+            ScriptManager.RegisterStartupScript(Me, Me.GetType(), "ErrorAlert",
                 "alert('حدث خطأ أثناء تحميل البيانات. يرجى المحاولة مرة أخرى.');", True)
         End Try
     End Sub
@@ -233,7 +233,7 @@ Partial Class Inventory
                     cmd.Parameters.AddWithValue("@Aditional_Actions", txtEditAditionalActions.SelectedValue)
                     cmd.Parameters.AddWithValue("@Required_Time", txtEditRequiredTime.SelectedValue)
                     cmd.Parameters.AddWithValue("@Subject_Status", txtEditSubjectStatus.SelectedValue)
-                    
+
                     ' Get values from other fields
                     cmd.Parameters.AddWithValue("@Postal_Code", txtEditPostalCode.Text)
                     cmd.Parameters.AddWithValue("@Emp_Number", txtEditEmpNumber.Text)
@@ -268,7 +268,7 @@ Partial Class Inventory
     Protected Sub btnCancelEdit_Click(sender As Object, e As EventArgs)
         ' Hide the edit popup
         pnlEditPopup.Visible = False
-        
+
         ' Clear the hidden field
         HiddenFieldEditRecordID.Value = ""
     End Sub
@@ -707,4 +707,27 @@ Partial Class Inventory
         End Try
         Return isValid
     End Function
+
+    Protected Sub TxtDate_TextChanged(ByVal sender As Object, ByVal e As System.EventArgs)
+        Try
+            If Not String.IsNullOrEmpty(TxtDate.Text) Then
+                ' Parse the date and time from the textbox
+                Dim dateTime As DateTime = DateTime.ParseExact(TxtDate.Text, "yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture)
+                
+                ' Update the textbox with the formatted date and time
+                TxtDate.Text = dateTime.ToString("yyyy/MM/dd HH:mm")
+                
+                ' Use the full date and time in your database operations
+                ' For example:
+                ' cmd.Parameters.AddWithValue("@Date", dateTime)
+            End If
+        Catch ex As Exception
+            ' Handle any parsing errors
+            Response.Write("<script>alert('خطأ في تنسيق التاريخ والوقت. الرجاء إدخال التاريخ والوقت بشكل صحيح.');</script>")
+        End Try
+    End Sub
+
+    Protected Sub Timer1_Tick(sender As Object, e As EventArgs)
+        LastUpdated.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")
+    End Sub
 End Class

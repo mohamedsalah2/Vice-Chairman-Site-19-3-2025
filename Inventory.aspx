@@ -1,10 +1,6 @@
-﻿<%@ Page Language="VB" AutoEventWireup="false" CodeFile="Inventory.aspx.vb" Inherits="Inventory" %>
+﻿<%@ Page Language="VB" AutoEventWireup="false" CodeFile="Inventory.aspx.vb" Inherits="Inventory" MasterPageFile="~/PostMaster.master" %>
 
-    <!DOCTYPE html
-        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml">
-
-    <head id="Head1" runat="server">
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
         <link href="Cal/Styles/calendar-blue.css" rel="stylesheet" type="text/css" />
         <title>Inventory Management</title>
 
@@ -271,17 +267,15 @@
                 margin-top: 10px;
             }
         </style>
-    </head>
+</asp:Content>
 
-    <body>
-        <form id="form1" runat="server" dir="rtl" style="background-color: #D2D2D2; height: auto; width: auto;">
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
+    <div id="DailyACCC" class="PageBody">
             <div dir="rtl">
-                <table align="center" style="margin-right: 0px;" dir="rtl" class="auto-style1">
+            <table align="center" style="margin-right: 0px; top: 1px; left: 1px; height: 30px;" dir="rtl" class="auto-style1">
                     <tr>
                         <td align="center" class="style18">
-                            <asp:LinkButton ID="LinkButton2" runat="server" PostBackUrl="~/Main.aspx" Font-Bold="True"
-                                Font-Size="18pt">الصفحة الرئيسية</asp:LinkButton>
-                        </td>
+                        &nbsp;</td>
                         <td align="center" class="style15" style="border-style: groove">
                             <asp:Label ID="Label23" runat="server" Text="موضوعات محور شئون المناطق" CssClass="style9"
                                 Font-Size="20pt" Width="364px"></asp:Label>
@@ -311,36 +305,16 @@
                             </span>
                         </td>
                         <td class="auto-style16" height="25">
-                            <span class="dtcDisplayArea" dir="rtl"><strong><span class="style35">
-                                        <script src="Cal/Scripts/jquery-1.4.1.min.js" type="text/javascript"></script>
-                                        <script src="Cal/Scripts/jquery.dynDateTime.min.js"
-                                            type="text/javascript"></script>
-                                        <script src="Cal/Scripts/calendar-en.min.js" type="text/javascript"></script>
-                                        <script type="text/javascript">
-                                            $(document).ready(function () {
-                                                $("#<%=TxtDate.ClientID %>").dynDateTime({
-                                                    Date: 'now',
-                                                    showsTime: true,
-                                                    timeFormat: "12",
-                                                    ifFormat: "%d/%m/%Y",     //the date format that will be used to display the date in displayArea 
-                                                    daFormat: "%e/%m/%Y",    //date format that will be stored in the input field 
-                                                    align: "BR",
-                                                    //          align: "TL",
-                                                    electric: true,
-                                                    singleClick: true,
-                                                    displayArea: ".siblings('.dtcDisplayArea')",
-                                                    button: ".next()",
-                                                    allowInputToggle: true
-
-                                                });
-                                            });
-
-                                        </script>
+                        <span class="dtcDisplayArea" dir="rtl">
+                            <strong>
+                                <span class="style35">
                                         <asp:TextBox ID="TxtDate" runat="server" Width="99px" Height="25px"
-                                            AutoPostBack="True"></asp:TextBox>
+                                        AutoPostBack="True" CssClass="dynDateTime" />
                                         <img src="cal/calender.png" alt="Click to popup the bank window!"
                                             style="width: 20px; height: 26px; margin-top: 0px" />
-                                    </span></strong></span>
+                                </span>
+                            </strong>
+                        </span>
                         </td>
                         <td class="auto-style4" height="25">&nbsp;
                             <strong>
@@ -363,8 +337,7 @@
                         <td class="style28" height="25">&nbsp;</td>
                         <td class="auto-style3" style="border-style: double" height="25" colspan="2" dir="rtl">
                             <asp:TextBox ID="TxtSearch" runat="server" Width="208px" CssClass="style9" Height="25px"
-                                Font-Size="15pt" onfocus="clearText(this)" onblur="restoreText(this)"
-                                Text="*إكتب كلمه للبحث*"></asp:TextBox>
+                            Font-Size="15pt" data-placeholder="*إكتب كلمه للبحث*"></asp:TextBox>
 
                             <script type="text/javascript">
                                 function clearText(txt) {
@@ -773,7 +746,7 @@
                             <asp:Button ID="Button3" runat="server" Text="حفظ" CssClass="btn-primary" OnClick="btnSaveEdit_Click" Style="padding: 4px 8px; font-size: 12px;" />
                         </div>
                         <asp:HiddenField ID="HiddenFieldEditRecordID" runat="server" />
-                        <div style="max-height: 60vh; overflow-y: auto;">
+                        <div style="max-height: 50vh; overflow-y: auto;">
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                 <!-- Row 1 -->
                                 <div style="display: flex; gap: 10px;">
@@ -1242,7 +1215,15 @@ AND (PRMTION = 2 OR (PRMTION = 1 AND Work_Area = @Work_Area))">
                     </UpdateParameters>
                 </asp:SqlDataSource>
             </div>
-        </form>
-    </body>
+    </div>
+</asp:Content>
 
-    </html>
+<asp:Content ID="Content3" ContentPlaceHolderID="ContentPlaceHolder2" runat="server">
+    <asp:UpdatePanel ID="UpdatePanel1" runat="server">
+        <ContentTemplate>
+            <asp:Timer ID="Timer1" runat="server" Interval="1000" OnTick="Timer1_Tick"></asp:Timer>
+            <asp:Label ID="Label17" runat="server" Text="Last Updated: "></asp:Label>
+            <asp:Label ID="LastUpdated" runat="server" Text=""></asp:Label>
+        </ContentTemplate>
+    </asp:UpdatePanel>
+</asp:Content>
